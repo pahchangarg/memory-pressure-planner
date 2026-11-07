@@ -1,0 +1,58 @@
+_ > nanoagent.plugin.v0001.ManifestConfig:
+id: memory-pressure-planner
+name: Memory Pressure Planner
+version: 0.1.0
+status: ready
+spec: nanoagent.plugin/v0001
+
+runtime > nanoagent.plugin.v0001.RuntimeConfig:
+  type: mcp_stdio
+  command: [uv, run, --frozen, python, -m, plugin]
+
+permissions > nanoagent.plugin.v0001.PermissionsConfig:
+  network > nanoagent.plugin.v0001.NetworkConfig:
+    hosts: []
+  filesystem > nanoagent.plugin.v0001.FilesystemConfig:
+    write: [workspace]
+
+# One entry per contract.Tool; its input and output classes are contract.TOOLS's.
+tools > dict[contract.Tool, nanoagent.plugin.v0001.ToolConfig]:
+  memory_pressure:
+    description: Work out the RAM in use, the RAM free and the pressure level (normal, warning or critical) of a machine and its open apps
+  kill_order:
+    description: List the order a low-memory killer would close the open apps in, and the protected apps it never closes
+  close_apps:
+    description: Close some apps and report the memory freed, the new pressure level and the seconds lost reopening them
+
+# One entry per contract.Task; its input and output classes are contract.TASKS's.
+tasks > dict[contract.Task, nanoagent.plugin.v0001.TaskConfig]:
+  memory-pressure:
+    description: Show how hard the machine's memory is pressed
+    runner: tool
+    tools: [memory_pressure]
+    reference: null
+    instructions: Report the RAM used and free and the pressure level.
+  kill-order:
+    description: Show which apps would be closed first when memory runs low
+    runner: tool
+    tools: [kill_order]
+    reference: null
+    instructions: List the apps in the order a low-memory killer closes them, and the protected ones.
+  close-apps:
+    description: Close some apps and see what it frees
+    runner: tool
+    tools: [close_apps]
+    reference: null
+    instructions: Close the named apps and report the memory, pressure and reopen time that follow.
+  free-memory:
+    description: Choose which apps to close to get memory under a target, losing the least time reopening them
+    runner: agent
+    tools: [memory_pressure, kill_order, close_apps]
+    reference: null
+    instructions: |-
+      Bring the machine's used memory to target_mb or below by closing apps, with the smallest total reopen_s.
+      Call memory_pressure to get used_mb; the apps must free at least used_mb - target_mb. If that is 0 or less, close nothing.
+      Only apps that are not protected may be closed: kill_order lists them, and lists the foreground app and apps with unsaved work as protected.
+      Pick the set of closable apps whose memory_mb adds up to at least what must be freed and whose reopen_s adds up to the least. Closing the biggest apps first, or following the kill order, is not always cheapest: compare combinations.
+      Check your choice with close_apps: used_mb must be target_mb or below. Submit possible true, the apps to close, and their total reopen_s.
+      If even closing every closable app frees too little, submit possible false, close empty and reopen_s 0.

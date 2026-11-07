@@ -1,0 +1,11 @@
+_ > nanoagent.plugin.v0001.ProductConfig:
+tagline: "Too many apps open? Close the right ones"
+summary: "Give it your machine's RAM and the apps you have open, and it shows how hard memory is pressed, which apps a low-memory killer would close first, and the cheapest set of apps to close to get back under a target, never touching the app you are using or anything with unsaved work."
+highlights:
+  - "Pressure levels from stated thresholds: above 80% is warning, above 95% critical"
+  - "Never closes the foreground app or anything with unsaved work"
+  - "Finds the set to close that loses the least time reopening apps, not just the biggest"
+steps:
+  - "List your RAM and each open app: memory, what it is doing, unsaved work, reopen time"
+  - "It reports the pressure and the order apps would be closed in"
+  - "Set a target and it picks the cheapest apps to close"
